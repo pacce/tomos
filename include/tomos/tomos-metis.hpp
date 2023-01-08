@@ -55,6 +55,7 @@ namespace metis {
         idx_t * next = xadj + 1;
         for (auto& [key, value] : values) {
             for (idx_t j = *prev; j < *next; j++) { value.push_back(adjncy[j] + 1); }
+            std::sort(value.begin(), value.end());
 
             prev++; next++;
         }
