@@ -28,6 +28,12 @@ main(int argc, char** argv) {
             }
             std::cout << std::endl;
         }
+
+        std::cout << std::endl;
+        tomos::metis::Partitions ps = tomos::metis::partition(mesh, tomos::metis::Common::EDGE, 2);
+        for (const auto& [key, p] : ps) {
+            std::cout << key << " : " << p << std::endl;
+        }
     } catch (const std::exception& e) {
         exit(EXIT_FAILURE);
     }
