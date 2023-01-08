@@ -113,6 +113,48 @@ TEST(Nodal, Simple) {
     }
 }
 
+TEST(Partition, Edge2) {
+    tomos::metis::Partitions actual     = tomos::metis::partition(MESH, tomos::metis::Common::EDGE, 2);
+    tomos::metis::Partitions expected   = {
+          {1, 0}
+        , {2, 1}
+        , {3, 1}
+        , {4, 1}
+        , {5, 0}
+        , {6, 0}
+        , {7, 0}
+        , {8, 1}
+    };
+
+    ASSERT_EQ(actual.size(), expected.size());
+
+    for (auto& [k, x] : expected) {
+        tomos::metis::Partition& y = actual[k];
+        EXPECT_EQ(x, y);
+    }
+}
+
+TEST(Partition, Edge4) {
+    tomos::metis::Partitions actual     = tomos::metis::partition(MESH, tomos::metis::Common::EDGE, 4);
+    tomos::metis::Partitions expected   = {
+          {1, 1}
+        , {2, 3}
+        , {3, 3}
+        , {4, 2}
+        , {5, 1}
+        , {6, 0}
+        , {7, 0}
+        , {8, 2}
+    };
+
+    ASSERT_EQ(actual.size(), expected.size());
+
+    for (auto& [k, x] : expected) {
+        tomos::metis::Partition& y = actual[k];
+        EXPECT_EQ(x, y);
+    }
+}
+
 int
 main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);

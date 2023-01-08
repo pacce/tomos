@@ -30,7 +30,7 @@ main(int argc, char** argv) {
         }
 
         std::cout << std::endl;
-        tomos::metis::Partitions ps = tomos::metis::partition(mesh, tomos::metis::Common::EDGE, 2);
+        tomos::metis::Partitions ps = tomos::metis::partition(mesh, tomos::metis::Common::EDGE, 4);
         for (const auto& [key, p] : ps) {
             std::cout << key << " : " << p << std::endl;
         }
