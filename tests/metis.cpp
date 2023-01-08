@@ -84,6 +84,35 @@ TEST(Dual, Edge) {
     }
 }
 
+TEST(Nodal, Simple) {
+    tomos::metis::Adjacency actual      = tomos::metis::nodal(MESH);
+    tomos::metis::Adjacency expected    = {
+          {1, {2, 4, 5}}
+        , {2, {1, 3, 5}}
+        , {3, {2, 5, 6}}
+        , {4, {1, 5, 7}}
+        , {5, {1, 2, 3, 4, 6, 7, 8, 9}}
+        , {6, {3, 5, 9}}
+        , {7, {4, 5, 8}}
+        , {8, {5, 7, 9}}
+        , {9, {5, 6, 8}}
+    };
+
+    ASSERT_EQ(actual.size(), expected.size());
+
+    for (auto& [k, xs] : expected) {
+        tomos::metis::Neighbours& ys = actual[k];
+
+        std::sort(xs.begin(), xs.end());
+        std::sort(ys.begin(), ys.end());
+
+        ASSERT_EQ(xs.size(), ys.size());
+        for (std::size_t i = 0; i < xs.size(); i++) {
+            EXPECT_EQ(xs[i], ys[i]);
+        }
+    }
+}
+
 int
 main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
