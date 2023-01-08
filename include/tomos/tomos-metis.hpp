@@ -7,16 +7,23 @@
 
 namespace tomos {
 namespace metis {
+    using Index         = mesh::element::Number;
+    using Neighbours    = std::vector<Index>;
+
+    using Adjacency = std::map<Index, Neighbours>;
+
+    enum class Common : uint8_t { NODE = 1, EDGE = 2, FACE = 3 };
+
     template <typename Precision>
-    std::map<mesh::element::Number, std::vector<mesh::element::Number>>
-    dual(const mesh::Mesh<Precision>& mesh) {
+    Adjacency
+    dual(const mesh::Mesh<Precision>& mesh, Common common) {
         idx_t ne = static_cast<idx_t>(mesh.element.size());
         idx_t nn = static_cast<idx_t>(mesh.nodes.size());
 
         std::vector<idx_t> eptr = {0};
         std::vector<idx_t> eind = {};
 
-        std::map<mesh::element::Number, std::vector<mesh::element::Number>> values;
+        Adjacency values;
 
         for (const auto& [key, e] : mesh.element) {
             values[key] = {};
@@ -26,7 +33,7 @@ namespace metis {
         }
 
         idx_t numflag = 0;  // C-style 0-based indexing
-        idx_t ncommon = 2;  // 2 common nodes per edge
+        idx_t ncommon = static_cast<idx_t>(common);
 
         idx_t * xadj;
         idx_t * adjncy;

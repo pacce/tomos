@@ -9,7 +9,7 @@ main(int argc, char** argv) {
     try {
         if (argc != 2) { throw std::invalid_argument("invali number of arguments"); }
         mesh::Mesh<float> mesh = mesh::decode<float>(std::filesystem::path{argv[1]});
-        auto values = tomos::metis::dual(mesh);
+        auto values = tomos::metis::dual(mesh, tomos::metis::Common::EDGE);
 
         for (const auto& [key, vs] : values) {
             std::cout << key << " : ";
