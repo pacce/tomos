@@ -1,0 +1,6 @@
+[wrap-git]
+url         = git@github.com:pacce/mesh.git
+revision    = head
+
+[provide]
+mesh = mesh_dep
