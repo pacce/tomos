@@ -2,7 +2,7 @@ project('tomos', 'cpp', version : '0.1.0', default_options : ['warning_level=3',
 
 cc            = meson.get_compiler('cpp')
 includes      = include_directories('include')
-dependencies  = [cc.find_library('metis'), dependency('mesh')]
+dependencies  = [dependency('boost'), cc.find_library('metis'), dependency('mesh')]
 
 tomos = library(
   meson.project_name()
