@@ -17,7 +17,7 @@ namespace color {
     template <typename Precision>
     Colors
     build(const mesh::Mesh<Precision>& mesh, tomos::metis::Common common) {
-        tomos::metis::Adjacency adjacency = tomos::metis::dual(mesh, common);
+        tomos::metis::Adjacency adjacency = metis::Dual<Precision>(mesh, common).adjacency();
 
         typedef std::pair<std::size_t, std::size_t> Edge;
         std::vector<Edge> edges = {};

@@ -29,7 +29,8 @@ const mesh::Mesh<float> MESH = {
 };
 
 TEST(Dual, Node) {
-    tomos::metis::Adjacency actual      = tomos::metis::dual(MESH, tomos::metis::Common::NODE);
+    tomos::metis::Dual dual(MESH, tomos::metis::Common::NODE);
+    tomos::metis::Adjacency actual      = dual.adjacency();
     tomos::metis::Adjacency expected    = {
           {1, {2, 3, 4, 5, 6, 7, 8}}
         , {2, {1, 3, 4, 5, 6, 7, 8}}
@@ -57,7 +58,8 @@ TEST(Dual, Node) {
 }
 
 TEST(Dual, Edge) {
-    tomos::metis::Adjacency actual      = tomos::metis::dual(MESH, tomos::metis::Common::EDGE);
+    tomos::metis::Dual dual(MESH, tomos::metis::Common::EDGE);
+    tomos::metis::Adjacency actual      = dual.adjacency();
     tomos::metis::Adjacency expected    = {
           {1, {2, 5}}
         , {2, {1, 3}}
@@ -85,7 +87,8 @@ TEST(Dual, Edge) {
 }
 
 TEST(Nodal, Simple) {
-    tomos::metis::Adjacency actual      = tomos::metis::nodal(MESH);
+    tomos::metis::Nodal nodal(MESH);
+    tomos::metis::Adjacency actual      = nodal.adjacency();
     tomos::metis::Adjacency expected    = {
           {1, {2, 4, 5}}
         , {2, {1, 3, 5}}
@@ -114,7 +117,8 @@ TEST(Nodal, Simple) {
 }
 
 TEST(Partition, Edge2) {
-    tomos::metis::Partitions actual     = tomos::metis::partition(MESH, tomos::metis::Common::EDGE, 2);
+    tomos::metis::Dual dual(MESH, tomos::metis::Common::EDGE);
+    tomos::metis::Partitions actual     = dual.partition(2);
     tomos::metis::Partitions expected   = {
           {1, 0}
         , {2, 1}
@@ -135,7 +139,8 @@ TEST(Partition, Edge2) {
 }
 
 TEST(Partition, Edge4) {
-    tomos::metis::Partitions actual     = tomos::metis::partition(MESH, tomos::metis::Common::EDGE, 4);
+    tomos::metis::Dual dual(MESH, tomos::metis::Common::EDGE);
+    tomos::metis::Partitions actual     = dual.partition(4);
     tomos::metis::Partitions expected   = {
           {1, 1}
         , {2, 3}

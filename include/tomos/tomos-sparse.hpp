@@ -12,18 +12,26 @@ namespace sparse {
 
     template <typename Precision>
     std::size_t
-    nonzeros(const mesh::Mesh<Precision>& mesh) {
+    nonzeros(const metis::Nodal<Precision>& nodal) {
+        metis::Adjacency adjacency  = nodal.adjacency();
         std::size_t count           = 0;
-        metis::Adjacency adjacency  = tomos::metis::nodal(mesh);
 
         for (const auto& [_, neighbours] : adjacency) { count += (1 + neighbours.size()); }
         return count;
     }
 
     template <typename Precision>
+    std::size_t
+    nonzeros(const mesh::Mesh<Precision>& mesh) {
+        metis::Nodal<Precision> nodal(mesh);
+        return nonzeros(nodal);
+    }
+
+    template <typename Precision>
     std::pair<Indices, Indices>
-    csr(const mesh::Mesh<Precision>& mesh) {
-        metis::Adjacency adjacency = tomos::metis::nodal(mesh);
+    csr(const metis::Nodal<Precision>& nodal) {
+        metis::Adjacency adjacency = nodal.adjacency();
+
         Indices rows   = {0};
         Indices cols   = {};
 
@@ -37,10 +45,16 @@ namespace sparse {
     }
 
     template <typename Precision>
-    std::map<Coordinate, Index>
-    coo(const mesh::Mesh<Precision>& mesh) {
-        metis::Adjacency adjacency = tomos::metis::nodal(mesh);
+    std::pair<Indices, Indices>
+    csr(const mesh::Mesh<Precision>& mesh) {
+        metis::Nodal<Precision> nodal(mesh);
+        return csr(nodal);
+    }
 
+    template <typename Precision>
+    std::map<Coordinate, Index>
+    coo(const metis::Nodal<Precision>& nodal) {
+        metis::Adjacency adjacency = nodal.adjacency();
         std::size_t count = 0;
 
         std::map<Coordinate, Index> ps;
@@ -54,6 +68,13 @@ namespace sparse {
             }
         }
         return ps;
+    }
+
+    template <typename Precision>
+    std::map<Coordinate, Index>
+    coo(const mesh::Mesh<Precision>& mesh) {
+        metis::Nodal<Precision> nodal(mesh);
+        return coo(nodal);
     }
 } // namespace sparse
 } // namespace tomos

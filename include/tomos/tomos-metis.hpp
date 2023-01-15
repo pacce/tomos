@@ -17,166 +17,143 @@ namespace metis {
     enum class Common : uint8_t { NODE = 1, EDGE = 2, FACE = 3 };
 
     template <typename Precision>
-    Adjacency
-    dual(const mesh::Mesh<Precision>& mesh, Common common) {
-        idx_t ne = static_cast<idx_t>(mesh.element.size());
-        idx_t nn = static_cast<idx_t>(mesh.nodes.size());
+    class Dual {
+        public:
+            Dual(const mesh::Mesh<Precision>& mesh, Common common)
+                : ne_(static_cast<idx_t>(mesh.element.size()))
+                , nn_(static_cast<idx_t>(mesh.nodes.size()))
+            {
+                std::vector<idx_t> eptr = {0};
+                std::vector<idx_t> eind = {};
 
-        std::vector<idx_t> eptr = {0};
-        std::vector<idx_t> eind = {};
+                for (const auto& [key, e] : mesh.element) {
+                    keys_.push_back(key);
 
-        Adjacency values;
+                    eptr.push_back(e.nodes.size() + eptr.back());
+                    for (const mesh::node::Number& n : e.nodes) {
+                        eind.push_back(n - 1); // C-style 0-based indexing
+                    }
+                }
 
-        for (const auto& [key, e] : mesh.element) {
-            values[key] = {};
+                idx_t numflag = 0;  // C-style 0-based indexing
+                idx_t ncommon = static_cast<idx_t>(common);
 
-            eptr.push_back(e.nodes.size() + eptr.back());
-            for (const mesh::node::Number& n : e.nodes) { eind.push_back(n - 1); }  // C-style 0-based indexing
-        }
+                METIS_MeshToDual(&ne_, &nn_, eptr.data(), eind.data(), &ncommon, &numflag, &xadj_, &adjncy_);
+            }
 
-        idx_t numflag = 0;  // C-style 0-based indexing
-        idx_t ncommon = static_cast<idx_t>(common);
+            ~Dual() {
+                METIS_Free(xadj_);
+                METIS_Free(adjncy_);
+            }
 
-        idx_t * xadj;
-        idx_t * adjncy;
+            Adjacency
+            adjacency() const {
+                Adjacency values;
 
-        METIS_MeshToDual(
-                  &ne   // number of elements
-                , &nn   // number of nodes
-                , eptr.data()
-                , eind.data()
-                , &ncommon
-                , &numflag
-                , &xadj
-                , &adjncy
-                );
+                idx_t * prev = xadj_;
+                idx_t * next = xadj_ + 1;
+                for (const Index& key : keys_) {
+                    values[key] = {};
+                    for (idx_t j = *prev; j < *next; j++) { values[key].push_back(adjncy_[j] + 1); }
 
-        idx_t * prev = xadj;
-        idx_t * next = xadj + 1;
-        for (auto& [key, value] : values) {
-            for (idx_t j = *prev; j < *next; j++) { value.push_back(adjncy[j] + 1); }
-            std::sort(value.begin(), value.end());
+                    prev++; next++;
+                }
+                return values;
+            }
 
-            prev++; next++;
-        }
+            Partitions
+            partition(std::size_t count) {
+                idx_t ncon      = 1;
+                idx_t nparts    = static_cast<idx_t>(count);
+                idx_t edgecut   = 0;
 
-        METIS_Free(xadj);
-        METIS_Free(adjncy);
+                std::vector<idx_t> part(ne_);
+                idx_t options[METIS_NOPTIONS];
+                METIS_SetDefaultOptions(options);
 
-        return values;
-    }
+                METIS_PartGraphKway(
+                          &ne_          // number of vertices
+                        , &ncon         // number of balancing constraints
+                        , xadj_
+                        , adjncy_
+                        , NULL          // vwgt
+                        , NULL          // vsize
+                        , NULL          // adjwgt
+                        , &nparts       // number of partitions
+                        , NULL          // tpwgts
+                        , NULL          // ubvec
+                        , options       // options
+                        , &edgecut      // objval
+                        , part.data()
+                        );
 
-    template <typename Precision>
-    Adjacency
-    nodal(const mesh::Mesh<Precision>& mesh) {
-        idx_t ne = static_cast<idx_t>(mesh.element.size());
-        idx_t nn = static_cast<idx_t>(mesh.nodes.size());
+                Partitions values;
+                for (std::size_t i = 0; i < keys_.size(); i++) {
+                    const Index& key        = keys_[i];
+                    const idx_t& partition  = part[i];
 
-        std::vector<idx_t> eptr = {0};
-        std::vector<idx_t> eind = {};
+                    values[key] = static_cast<std::size_t>(partition);
+                }
+                return values;
+            }
+        private:
+            idx_t ne_;  // number of elements
+            idx_t nn_;  // number of nodes
 
-        Adjacency values;
-        for (const auto& [key, e] : mesh.nodes) {
-            values[key] = {};
-        }
+            idx_t * xadj_;      // pointer structure
+            idx_t * adjncy_;    // pointer structure
 
-        for (const auto& [key, e] : mesh.element) {
-            eptr.push_back(e.nodes.size() + eptr.back());
-            for (const mesh::node::Number& n : e.nodes) { eind.push_back(n - 1); }  // C-style 0-based indexing
-        }
-
-        idx_t numflag = 0;  // C-style 0-based indexing
-
-        idx_t * xadj;
-        idx_t * adjncy;
-
-        METIS_MeshToNodal(
-                  &ne   // number of elements
-                , &nn   // number of nodes
-                , eptr.data()
-                , eind.data()
-                , &numflag
-                , &xadj
-                , &adjncy
-                );
-
-        idx_t * prev = xadj;
-        idx_t * next = xadj + 1;
-        for (auto& [key, value] : values) {
-            for (idx_t j = *prev; j < *next; j++) { value.push_back(adjncy[j] + 1); }
-
-            prev++; next++;
-        }
-
-        METIS_Free(xadj);
-        METIS_Free(adjncy);
-
-        return values;
-    }
+            std::vector<Index> keys_;
+    };
 
     template <typename Precision>
-    Partitions
-    partition(const mesh::Mesh<Precision>& mesh, Common common, std::size_t count) {
-        idx_t ne = static_cast<idx_t>(mesh.element.size());
-        idx_t nn = static_cast<idx_t>(mesh.nodes.size());
+    class Nodal {
+        public:
+            Nodal(const mesh::Mesh<Precision>& mesh)
+                : ne_(static_cast<idx_t>(mesh.element.size()))
+                , nn_(static_cast<idx_t>(mesh.nodes.size()))
+            {
+                std::vector<idx_t> eptr = {0};
+                std::vector<idx_t> eind = {};
 
-        std::vector<idx_t> eptr = {0};
-        std::vector<idx_t> eind = {};
+                for (const auto& [key, _] : mesh.nodes) { keys_.push_back(key); }
+                for (const auto& [key, e] : mesh.element) {
+                    eptr.push_back(e.nodes.size() + eptr.back());
+                    for (const mesh::node::Number& n : e.nodes) { eind.push_back(n - 1); }  // C-style 0-based indexing
+                }
 
-        for (const auto& [key, e] : mesh.element) {
-            eptr.push_back(e.nodes.size() + eptr.back());
-            for (const mesh::node::Number& n : e.nodes) { eind.push_back(n - 1); }  // C-style 0-based indexing
-        }
+                idx_t numflag = 0;  // C-style 0-based indexing
+                METIS_MeshToNodal(&ne_, &nn_, eptr.data(), eind.data(), &numflag, &xadj_, &adjncy_);
+            }
 
-        idx_t numflag = 0;  // C-style 0-based indexing
-        idx_t ncommon = static_cast<idx_t>(common);
+            Adjacency
+            adjacency() const {
+                Adjacency values;
 
-        idx_t * xadj;
-        idx_t * adjncy;
+                idx_t * prev = xadj_;
+                idx_t * next = xadj_ + 1;
+                for (const Index& key : keys_) {
+                    values[key] = {};
+                    for (idx_t j = *prev; j < *next; j++) { values[key].push_back(adjncy_[j] + 1); }
 
-        METIS_MeshToDual(
-                  &ne   // number of elements
-                , &nn   // number of nodes
-                , eptr.data()
-                , eind.data()
-                , &ncommon
-                , &numflag
-                , &xadj
-                , &adjncy
-                );
+                    prev++; next++;
+                }
+                return values;
+            }
 
-        idx_t ncon      = 1;
-        idx_t nparts    = static_cast<idx_t>(count);
-        idx_t edgecut   = 0;
+            ~Nodal() {
+                METIS_Free(xadj_);
+                METIS_Free(adjncy_);
+            }
+        private:
+            idx_t ne_;  // number of elements
+            idx_t nn_;  // number of nodes
 
-        std::vector<idx_t> part(ne);
-        idx_t options[METIS_NOPTIONS];
-        METIS_SetDefaultOptions(options);
+            idx_t * xadj_;      // pointer structure
+            idx_t * adjncy_;    // pointer structure
 
-        METIS_PartGraphKway(
-                &ne           // number of vertices
-                , &ncon         // number of balancing constraints
-                , xadj
-                , adjncy
-                , NULL          // vwgt
-                , NULL          // vsize
-                , NULL          // adjwgt
-                , &nparts       // number of partitions
-                , NULL          // tpwgts
-                , NULL          // ubvec
-                , options       // options
-                , &edgecut      // objval
-                , part.data()
-                );
-
-        std::size_t i = 0;
-
-        Partitions values;
-        for (const auto& [key, _] : mesh.element) {
-            values[key] = static_cast<std::size_t>(part[i++]);
-        }
-        return values;
-    }
+            std::vector<Index> keys_;
+    };
 } // namespace metis
 } // namespace tomos
 
