@@ -6,8 +6,9 @@
 
 namespace tomos {
 namespace sparse {
-    using Index     = std::size_t;
-    using Indices   = std::vector<Index>;
+    using Index         = std::size_t;
+    using Indices       = std::vector<Index>;
+    using Coordinate    = std::pair<Index, Index>;
 
     template <typename Precision>
     std::size_t
@@ -22,17 +23,37 @@ namespace sparse {
     template <typename Precision>
     std::pair<Indices, Indices>
     csr(const mesh::Mesh<Precision>& mesh) {
-        metis::Adjacency adjacency      = tomos::metis::nodal(mesh);
+        metis::Adjacency adjacency = tomos::metis::nodal(mesh);
         Indices rows   = {0};
         Indices cols   = {};
 
-        for (const auto& [key, neighbours] : adjacency) { 
+        for (const auto& [key, neighbours] : adjacency) {
             cols.push_back(key - 1);
             for(const auto& neighbour : neighbours) { cols.push_back(neighbour - 1); }
             rows.push_back(1 + neighbours.size() + rows.back());
         }
 
         return {cols, rows};
+    }
+
+    template <typename Precision>
+    std::map<Coordinate, Index>
+    coo(const mesh::Mesh<Precision>& mesh) {
+        metis::Adjacency adjacency = tomos::metis::nodal(mesh);
+
+        std::size_t count = 0;
+
+        std::map<Coordinate, Index> ps;
+        for (const auto& [key, neighbours] : adjacency) {
+            std::vector<metis::Index> xs{key};
+            xs.insert(xs.end(), neighbours.begin(), neighbours.end());
+
+            for (std::size_t i = 0; i < xs.size(); i++) {
+                auto [_, inserted] =  ps.insert({{key, xs[i]}, count});
+                if (inserted) { count++; }
+            }
+        }
+        return ps;
     }
 } // namespace sparse
 } // namespace tomos
