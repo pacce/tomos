@@ -10,11 +10,12 @@
 
 namespace tomos {
 namespace color {
-    using Index = mesh::element::Number;
-    using Color = std::size_t;
+    using Index     = mesh::element::Number;
+    using Color     = std::size_t;
+    using Colors    = std::map<mesh::element::Number, Color>;
 
     template <typename Precision>
-    std::map<mesh::element::Number, std::size_t>
+    Colors
     build(const mesh::Mesh<Precision>& mesh, tomos::metis::Common common) {
         tomos::metis::Adjacency adjacency = tomos::metis::dual(mesh, common);
 
@@ -39,9 +40,9 @@ namespace color {
         boost::iterator_property_map color(&cs.front(), boost::get(boost::vertex_index, graph));
         boost::sequential_vertex_coloring(graph, color);
 
-        std::map<mesh::element::Number, std::size_t> values;
-        for (std::size_t i = 0; i < cs.size(); i++) { values[i + 1] = cs[i]; }
-        return values;
+        Colors colors;
+        for (std::size_t i = 0; i < cs.size(); i++) { colors[i + 1] = cs[i]; }
+        return colors;
     }
 } // namespace color
 } // namespace tomos
