@@ -1,0 +1,19 @@
+float
+area3(const float3 * node) {
+    float3 u = node[1] - node[0];
+    float3 v = node[2] - node[0];
+    float3 w = cross(u, v);
+
+    return sqrt(dot(w, w)) / 2.0;
+}
+
+kernel void
+area(global const float3 * nodes, global const uint * elements, global float * values) {
+    size_t i = get_global_id(0);
+    float3 node[3];
+    for (int j = 0; j < 3; j++) {
+        uint index  = elements[3 * i + j];
+        node[j]     = nodes[index];
+    }
+    values[i] = area3(node);
+}
