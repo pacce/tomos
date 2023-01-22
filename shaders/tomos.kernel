@@ -1,3 +1,9 @@
+typedef struct {
+    uint3   nodes;
+    float   resistivity;
+    uint    indices[9];
+} __attribute__ ((packed)) triangle_t;
+
 float
 area3(const float3 * node) {
     float3 u = node[1] - node[0];
@@ -5,6 +11,28 @@ area3(const float3 * node) {
     float3 w = cross(u, v);
 
     return sqrt(dot(w, w)) / 2.0;
+}
+
+void
+element3(const float3 * node, float * ks) {
+    float area      = area3(node);
+    float scalar    = 1.0 / (4.0 * area * 1.0); // THICKNESS / (4.0 * AREA * RESISTIVITY)
+    float bs[3] = {
+          node[1].y - node[2].y
+        , node[2].y - node[0].y
+        , node[0].y - node[1].y
+    };
+    float gs[3] = {
+          node[2].x - node[1].x
+        , node[0].x - node[2].x
+        , node[1].x - node[0].x
+    };
+
+    for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+        ks[i + 3 * j] = scalar * (bs[i] * bs[j] + gs[i] * gs[j]);
+    }
+    }
 }
 
 kernel void
@@ -16,4 +44,23 @@ area(global const float3 * nodes, global const uint * elements, global float * v
         node[j]     = nodes[index];
     }
     values[i] = area3(node);
+}
+
+kernel void
+stiffness(ulong n, global const float3 * nodes, global const triangle_t * elements, global float * sparse) {
+    size_t i = get_global_id(0);
+    if (i < n) {
+        triangle_t element  = elements[i];
+
+        float   ks[9];
+        float3  node[3];
+        for (int j = 0; j < 3; j++) {
+            node[j] = nodes[element.nodes[j]];
+        }
+        element3(node, ks);
+
+        for (int j = 0; j < 9; j++) {
+            sparse[element.indices[j]] += ks[j];
+        }
+    }
 }

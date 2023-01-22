@@ -7,8 +7,16 @@
 #include <filesystem>
 #include <mesh/mesh.hpp>
 
+#include "tomos-sparse.hpp"
+
 namespace tomos {
     class Engine {
+        struct __attribute__ ((packed)) Triangle {
+            cl_uint3 nodes;
+            cl_float resistivity;
+            cl_uint  indices[9];
+        };
+        using Coordinates = std::map<sparse::Coordinate, sparse::Index>;
         public:
             Engine(cl_device_type model)
                 : device_(Engine::device(model))
@@ -46,6 +54,62 @@ namespace tomos {
                 queue.enqueueReadBuffer(values, CL_TRUE, 0, xs.size() * sizeof(float), xs.data());
 
                 return xs;
+            }
+
+            template <typename Precision>
+            std::vector<float>
+            color(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+                using Color     = tomos::color::Color;
+                using Index     = tomos::color::Index;
+                using Indices   = std::vector<Index>;
+
+                tomos::color::Colors cs = tomos::color::build(mesh, tomos::metis::Common::NODE);
+
+                std::map<Color, Indices> colors;
+                for (const auto& [element, color] : cs) {
+                    auto [it, inserted] = colors.insert({color, {element}});
+                    if (not inserted) { it->second.push_back(element); }
+                }
+
+
+                std::string source      = Engine::kernel(path);
+
+                cl::CommandQueue queue(context_, device_);
+                cl::Program program(context_, cl::Program::Sources({source}));
+                program.build(device_);
+
+                cl::Kernel kernel(program, "stiffness");
+
+                cl::Buffer nodes    = this->nodes(mesh);
+                cl::Buffer sparse   = this->buffer<float>(sparse::nonzeros(mesh), CL_MEM_READ_WRITE);
+
+                Coordinates coo  = sparse::coo(mesh);
+                for (const auto& [color, es] : colors) {
+                    std::vector<Triangle> vs(es.size());
+                    for (std::size_t i = 0; i < es.size(); i++) {
+                        const mesh::Element& e  = mesh.element.find(es[i])->second;
+                        vs[i].nodes             = {
+                                  static_cast<uint32_t>(e.nodes[0] - 1)
+                                , static_cast<uint32_t>(e.nodes[1] - 1)
+                                , static_cast<uint32_t>(e.nodes[2] - 1)
+                                };
+                        vs[i].resistivity       = 1.0;
+                        std::vector<cl_uint> nz = Engine::nonzero(e, coo);
+
+                        std::copy(nz.begin(), nz.end(), vs[i].indices);
+                    }
+                    cl::Buffer elements = this->buffer(vs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                    kernel.setArg(0, static_cast<ulong>(es.size()));
+                    kernel.setArg(1, nodes);
+                    kernel.setArg(2, elements);
+                    kernel.setArg(3, sparse);
+
+                    queue.enqueueNDRangeKernel(kernel, cl::NullRange, es.size(), cl::NullRange);
+                }
+                std::vector<float> values(sparse::nonzeros(mesh), 0.0f);
+                queue.enqueueReadBuffer(sparse, CL_TRUE, 0, values.size() * sizeof(float), values.data());
+
+                return values;
             }
         private:
             static cl::Device
@@ -105,6 +169,29 @@ namespace tomos {
                     xs[index++] = {node.x(), node.y(), node.z()};
                 }
                 return buffer(xs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+            }
+
+            static std::vector<cl_uint>
+            nonzero(const mesh::Element& element, const Coordinates& coo) {
+                const std::vector<mesh::node::Number>& nodes    = element.nodes;
+                std::size_t count                               = nodes.size();
+
+                std::vector<tomos::sparse::Coordinate> vs;
+                for (std::size_t i = 0; i < count; i++) {
+                    for (std::size_t j = 0; j < count; j++) {
+                        vs.emplace_back(nodes[i], nodes[j]);
+                    }
+                }
+                std::vector<cl_uint> ii;
+                std::transform(
+                          vs.begin()
+                        , vs.end()
+                        , std::back_inserter(ii)
+                        , [=](const sparse::Coordinate& v) {
+                            return static_cast<cl_uint>(coo.find(v)->second); 
+                        });
+
+                return ii;
             }
 
             cl::Device  device_;
