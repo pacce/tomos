@@ -52,34 +52,41 @@ namespace device {
                 cl::Program program(context_, cl::Program::Sources({source}));
                 program.build(device_);
 
-                cl::Kernel kernel(program, "area");
-                cl::Buffer nodes = engine::device::nodes(context_, mesh);
-
                 std::vector<cl_uint> indices;
 
                 for (const auto& [_, element] : mesh.element) {
                     for (const mesh::node::Number& node : element.nodes) { indices.push_back(node - 1); }
                 }
 
-                cl::Buffer elements(
-                          context_
-                        , CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR
-                        , indices.size() * sizeof(cl_uint)
-                        , indices.data()
-                        );
-                std::vector<float> xs(mesh.element.size());
-                cl::Buffer values(context_, CL_MEM_READ_WRITE, mesh.element.size() * sizeof(float));
+                cl::Buffer nodes    = engine::device::nodes(context_, mesh);
+                cl::Buffer elements = this->buffer(indices, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                cl::Buffer values   = this->buffer<float>(mesh.element.size(), CL_MEM_READ_WRITE);
+
+                cl::Kernel kernel(program, "area");
 
                 kernel.setArg(0, nodes);
                 kernel.setArg(1, elements);
                 kernel.setArg(2, values);
 
                 queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.element.size(), cl::NullRange);
+
+                std::vector<float> xs(mesh.element.size());
                 queue.enqueueReadBuffer(values, CL_TRUE, 0, xs.size() * sizeof(float), xs.data());
 
                 return xs;
             }
         private:
+            template <typename T>
+            cl::Buffer
+            buffer(std::vector<T>& vs, cl_mem_flags flag) {
+                return {context_, flag, vs.size() * sizeof(T), vs.data()};
+            }
+
+            template <typename T>
+            cl::Buffer
+            buffer(std::size_t size, cl_mem_flags flag) {
+                return {context_, flag, size * sizeof(T)};
+            }
             cl::Device  device_;
             cl::Context context_;
     };
