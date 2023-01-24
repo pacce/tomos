@@ -59,6 +59,8 @@ namespace tomos {
             template <typename Precision>
             std::vector<float>
             color(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+                std::vector<float> values(sparse::nonzeros(mesh), 0.0f);
+
                 using Color     = tomos::color::Color;
                 using Index     = tomos::color::Index;
                 using Indices   = std::vector<Index>;
@@ -71,7 +73,6 @@ namespace tomos {
                     if (not inserted) { it->second.push_back(element); }
                 }
 
-
                 std::string source      = Engine::kernel(path);
 
                 cl::CommandQueue queue(context_, device_);
@@ -81,18 +82,18 @@ namespace tomos {
                 cl::Kernel kernel(program, "stiffness");
 
                 cl::Buffer nodes    = this->nodes(mesh);
-                cl::Buffer sparse   = this->buffer<float>(sparse::nonzeros(mesh), CL_MEM_READ_WRITE);
+                cl::Buffer sparse   = this->buffer(values, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR);
 
                 Coordinates coo  = sparse::coo(mesh);
                 for (const auto& [color, es] : colors) {
                     std::vector<Triangle> vs(es.size());
                     for (std::size_t i = 0; i < es.size(); i++) {
                         const mesh::Element& e  = mesh.element.find(es[i])->second;
-                        vs[i].nodes             = {
+                        vs[i].nodes             = {{
                                   static_cast<uint32_t>(e.nodes[0] - 1)
                                 , static_cast<uint32_t>(e.nodes[1] - 1)
                                 , static_cast<uint32_t>(e.nodes[2] - 1)
-                                };
+                                }};
                         vs[i].resistivity       = 1.0;
                         std::vector<cl_uint> nz = Engine::nonzero(e, coo);
 
@@ -106,7 +107,6 @@ namespace tomos {
 
                     queue.enqueueNDRangeKernel(kernel, cl::NullRange, es.size(), cl::NullRange);
                 }
-                std::vector<float> values(sparse::nonzeros(mesh), 0.0f);
                 queue.enqueueReadBuffer(sparse, CL_TRUE, 0, values.size() * sizeof(float), values.data());
 
                 return values;
@@ -176,20 +176,13 @@ namespace tomos {
                 const std::vector<mesh::node::Number>& nodes    = element.nodes;
                 std::size_t count                               = nodes.size();
 
-                std::vector<tomos::sparse::Coordinate> vs;
+                std::vector<cl_uint> ii(count * count);
                 for (std::size_t i = 0; i < count; i++) {
-                    for (std::size_t j = 0; j < count; j++) {
-                        vs.emplace_back(nodes[i], nodes[j]);
-                    }
+                for (std::size_t j = 0; j < count; j++) {
+                    std::size_t offset  = i * 3 + j;
+                    ii[offset]          = coo.find({nodes[i], nodes[j]})->second;
                 }
-                std::vector<cl_uint> ii;
-                std::transform(
-                          vs.begin()
-                        , vs.end()
-                        , std::back_inserter(ii)
-                        , [=](const sparse::Coordinate& v) {
-                            return static_cast<cl_uint>(coo.find(v)->second); 
-                        });
+                }
 
                 return ii;
             }
