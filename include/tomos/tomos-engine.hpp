@@ -32,14 +32,8 @@ namespace tomos {
                 cl::Program program(context_, cl::Program::Sources({source}));
                 program.build(device_);
 
-                std::vector<cl_uint> indices;
-
-                for (const auto& [_, element] : mesh.element) {
-                    for (const mesh::node::Number& node : element.nodes) { indices.push_back(node - 1); }
-                }
-
                 cl::Buffer nodes    = this->nodes(mesh);
-                cl::Buffer elements = this->buffer(indices, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                cl::Buffer elements = this->indices(mesh);
                 cl::Buffer values   = this->buffer<float>(mesh.element.size(), CL_MEM_READ_WRITE);
 
                 cl::Kernel kernel(program, "area");
@@ -65,14 +59,8 @@ namespace tomos {
                 cl::Program program(context_, cl::Program::Sources({source}));
                 program.build(device_);
 
-                std::vector<cl_uint> indices;
-
-                for (const auto& [_, element] : mesh.element) {
-                    for (const mesh::node::Number& node : element.nodes) { indices.push_back(node - 1); }
-                }
-
                 cl::Buffer nodes    = this->nodes(mesh);
-                cl::Buffer elements = this->buffer(indices, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                cl::Buffer elements = this->indices(mesh);
                 cl::Buffer values   = this->buffer<cl_float3>(mesh.element.size(), CL_MEM_READ_WRITE);
 
                 cl::Kernel kernel(program, "centroid");
@@ -103,14 +91,8 @@ namespace tomos {
                 cl::Program program(context_, cl::Program::Sources({source}));
                 program.build(device_);
 
-                std::vector<cl_uint> indices;
-
-                for (const auto& [_, element] : mesh.element) {
-                    for (const mesh::node::Number& node : element.nodes) { indices.push_back(node - 1); }
-                }
-
                 cl::Buffer nodes    = this->nodes(mesh);
-                cl::Buffer elements = this->buffer(indices, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                cl::Buffer elements = this->indices(mesh);
                 cl::Buffer values   = this->buffer<cl_float3>(mesh.element.size(), CL_MEM_READ_WRITE);
 
                 cl::Kernel kernel(program, "normal");
@@ -245,6 +227,17 @@ namespace tomos {
                     xs[index++] = {node.x(), node.y(), node.z()};
                 }
                 return buffer(xs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+            }
+
+            template <typename Precision>
+            cl::Buffer
+            indices(const mesh::Mesh<Precision>& mesh) {
+                std::vector<cl_uint> xs;
+
+                for (const auto& [_, element] : mesh.element) {
+                    for (const mesh::node::Number& node : element.nodes) { xs.push_back(node - 1); }
+                }
+                return this->buffer(xs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
             }
 
             static std::vector<cl_uint>
