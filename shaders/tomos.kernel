@@ -4,12 +4,16 @@ typedef struct {
     uint    indices[9];
 } __attribute__ ((packed)) triangle_t;
 
-float
-area3(const float3 * node) {
+float3
+normal3(const float3 * node) {
     float3 u = node[1] - node[0];
     float3 v = node[2] - node[0];
-    float3 w = cross(u, v);
+    return cross(u, v);
+}
 
+float
+area3(const float3 * node) {
+    float3 w = normal3(node);
     return sqrt(dot(w, w)) / 2.0;
 }
 
@@ -64,6 +68,17 @@ centroid(global const float3 * nodes, global const uint * elements, global float
         node[j]     = nodes[index];
     }
     values[i] = centroid3(node);
+}
+
+kernel void
+normal(global const float3 * nodes, global const uint * elements, global float3 * values) {
+    size_t i = get_global_id(0);
+    float3 node[3];
+    for (int j = 0; j < 3; j++) {
+        uint index  = elements[3 * i + j];
+        node[j]     = nodes[index];
+    }
+    values[i] = normal3(node);
 }
 
 kernel void
