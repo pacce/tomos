@@ -57,6 +57,44 @@ namespace tomos {
             }
 
             template <typename Precision>
+            std::vector<mesh::Node<Precision>>
+            centroid(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+                std::string source = Engine::kernel(path);
+
+                cl::CommandQueue queue(context_, device_);
+                cl::Program program(context_, cl::Program::Sources({source}));
+                program.build(device_);
+
+                std::vector<cl_uint> indices;
+
+                for (const auto& [_, element] : mesh.element) {
+                    for (const mesh::node::Number& node : element.nodes) { indices.push_back(node - 1); }
+                }
+
+                cl::Buffer nodes    = this->nodes(mesh);
+                cl::Buffer elements = this->buffer(indices, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                cl::Buffer values   = this->buffer<cl_float3>(mesh.element.size(), CL_MEM_READ_WRITE);
+
+                cl::Kernel kernel(program, "centroid");
+
+                kernel.setArg(0, nodes);
+                kernel.setArg(1, elements);
+                kernel.setArg(2, values);
+
+                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.element.size(), cl::NullRange);
+
+                std::vector<cl_float3> cs(mesh.element.size());
+                queue.enqueueReadBuffer(values, CL_TRUE, 0, cs.size() * sizeof(cl_float3), cs.data());
+
+                std::vector<mesh::Node<Precision>> xs;
+                xs.reserve(cs.size());
+                for (const cl_float3& centroid : cs) {
+                    xs.emplace_back(centroid.s[0], centroid.s[1], centroid.s[2]);
+                }
+                return xs;
+            }
+
+            template <typename Precision>
             std::vector<float>
             color(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
                 std::vector<float> values(sparse::nonzeros(mesh), 0.0f);
