@@ -8,12 +8,13 @@
 #include <mesh/mesh.hpp>
 
 #include "tomos-sparse.hpp"
+#include "tomos-mesh.hpp"
 
 namespace tomos {
 namespace nodes {
     template <typename Precision>
     std::vector<cl_float3>
-    encode(const mesh::Mesh<Precision>& mesh) {
+    encode(const ::mesh::Mesh<Precision>& mesh) {
         std::vector<cl_float3> xs(mesh.nodes.size());
 
         std::size_t index = 0;
@@ -25,18 +26,18 @@ namespace nodes {
 
     template <typename Precision>
     std::vector<cl_float3>
-    encode(const std::vector<mesh::Node<Precision>>& ns) {
+    encode(const std::vector<::mesh::Node<Precision>>& ns) {
         std::vector<cl_float3> xs(ns.size());
 
         std::size_t index = 0;
-        for (const mesh::Node<Precision>& n : ns) { xs[index++] = {n.x(), n.y(), n.z()}; }
+        for (const ::mesh::Node<Precision>& n : ns) { xs[index++] = {n.x(), n.y(), n.z()}; }
         return xs;
     }
 
     template <typename Precision>
-    std::vector<mesh::Node<Precision>>
+    std::vector<::mesh::Node<Precision>>
     decode(const std::vector<cl_float3>& ns) {
-        std::vector<mesh::Node<Precision>> xs(ns.size());
+        std::vector<::mesh::Node<Precision>> xs(ns.size());
 
         std::size_t index = 0;
         for (const cl_float3& n : ns) { xs[index++] = {n.s[0], n.s[1], n.s[2]}; }
@@ -57,14 +58,13 @@ namespace nodes {
                 , context_(device_)
             {}
 
-            template <typename Precision>
             std::vector<float>
-            area(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+            area(const tomos::mesh::Mesh& mesh, const std::filesystem::path& path) {
                 cl::Program program = this->program(path);
 
                 cl::Buffer nodes    = this->nodes(mesh);
                 cl::Buffer elements = this->indices(mesh);
-                cl::Buffer values   = this->buffer<float>(mesh.element.size(), CL_MEM_READ_WRITE);
+                cl::Buffer values   = this->buffer<float>(mesh.elements.size(), CL_MEM_READ_WRITE);
 
                 cl::Kernel kernel(program, "area");
 
@@ -73,19 +73,18 @@ namespace nodes {
                 kernel.setArg(2, values);
 
                 cl::CommandQueue queue(context_, device_);
-                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.element.size(), cl::NullRange);
+                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.elements.size(), cl::NullRange);
 
-                return this->read<float>(queue, values, mesh.element.size());
+                return this->read<float>(queue, values, mesh.elements.size());
             }
 
-            template <typename Precision>
-            std::vector<mesh::Node<Precision>>
-            centroid(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+            std::vector<mesh::Node>
+            centroid(const tomos::mesh::Mesh& mesh, const std::filesystem::path& path) {
                 cl::Program program = this->program(path);
 
                 cl::Buffer nodes    = this->nodes(mesh);
                 cl::Buffer elements = this->indices(mesh);
-                cl::Buffer values   = this->buffer<cl_float3>(mesh.element.size(), CL_MEM_READ_WRITE);
+                cl::Buffer values   = this->buffer<cl_float3>(mesh.elements.size(), CL_MEM_READ_WRITE);
 
                 cl::Kernel kernel(program, "centroid");
 
@@ -94,20 +93,18 @@ namespace nodes {
                 kernel.setArg(2, values);
 
                 cl::CommandQueue queue(context_, device_);
-                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.element.size(), cl::NullRange);
+                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.elements.size(), cl::NullRange);
 
-                std::vector<cl_float3> cs = this->read<cl_float3>(queue, values, mesh.element.size());
-                return nodes::decode<Precision>(cs);
+                return this->read<cl_float3>(queue, values, mesh.elements.size());
             }
 
-            template <typename Precision>
-            std::vector<mesh::Node<Precision>>
-            normal(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+            std::vector<tomos::mesh::Node>
+            normal(const tomos::mesh::Mesh& mesh, const std::filesystem::path& path) {
                 cl::Program program = this->program(path);
 
                 cl::Buffer nodes    = this->nodes(mesh);
                 cl::Buffer elements = this->indices(mesh);
-                cl::Buffer values   = this->buffer<cl_float3>(mesh.element.size(), CL_MEM_READ_WRITE);
+                cl::Buffer values   = this->buffer<cl_float3>(mesh.elements.size(), CL_MEM_READ_WRITE);
 
                 cl::Kernel kernel(program, "normal");
 
@@ -116,15 +113,14 @@ namespace nodes {
                 kernel.setArg(2, values);
 
                 cl::CommandQueue queue(context_, device_);
-                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.element.size(), cl::NullRange);
+                queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.elements.size(), cl::NullRange);
 
-                std::vector<cl_float3> ns = this->read<cl_float3>(queue, values, mesh.element.size());
-                return nodes::decode<Precision>(ns);
+                return this->read<cl_float3>(queue, values, mesh.elements.size());
             }
 
             template <typename Precision>
             std::vector<float>
-            color(const mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
+            color(const ::mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
                 std::vector<float> values(sparse::nonzeros(mesh), 0.0f);
 
                 using Color     = tomos::color::Color;
@@ -151,8 +147,8 @@ namespace nodes {
                 for (const auto& [color, es] : colors) {
                     std::vector<Triangle> vs(es.size());
                     for (std::size_t i = 0; i < es.size(); i++) {
-                        const mesh::Element& e  = mesh.element.find(es[i])->second;
-                        vs[i].nodes             = {{
+                        const ::mesh::Element& e    = mesh.element.find(es[i])->second;
+                        vs[i].nodes                 = {{
                                   static_cast<uint32_t>(e.nodes[0] - 1)
                                 , static_cast<uint32_t>(e.nodes[1] - 1)
                                 , static_cast<uint32_t>(e.nodes[2] - 1)
@@ -238,19 +234,39 @@ namespace nodes {
 
             template <typename Precision>
             cl::Buffer
-            nodes(const mesh::Mesh<Precision>& mesh) {
+            nodes(const ::mesh::Mesh<Precision>& mesh) {
                 std::vector<cl_float3> xs = nodes::encode(mesh);
                 return buffer(xs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
             }
 
+            cl::Buffer
+            nodes(const tomos::mesh::Mesh& mesh) {
+                return {
+                      context_
+                    , CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR
+                    , mesh.nodes.size() * sizeof(cl_float3)
+                    , const_cast<cl_float4*>(mesh.nodes.data())
+                };
+            }
+
             template <typename Precision>
             cl::Buffer
-            indices(const mesh::Mesh<Precision>& mesh) {
+            indices(const ::mesh::Mesh<Precision>& mesh) {
                 std::vector<cl_uint> xs;
 
                 for (const auto& [_, element] : mesh.element) {
-                    for (const mesh::node::Number& node : element.nodes) { xs.push_back(node - 1); }
+                    for (const ::mesh::node::Number& node : element.nodes) { xs.push_back(node - 1); }
                 }
+                return this->buffer(xs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+            }
+
+            cl::Buffer
+            indices(const tomos::mesh::Mesh& mesh) {
+                std::vector<cl_uint> xs;
+                for (const tomos::mesh::Element& e : mesh.elements) {
+                    xs.insert(xs.end(), e.nodes.begin(), e.nodes.end());
+                }
+
                 return this->buffer(xs, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
             }
 
@@ -263,8 +279,8 @@ namespace nodes {
             }
 
             static std::vector<cl_uint>
-            nonzero(const mesh::Element& element, const Coordinates& coo) {
-                const std::vector<mesh::node::Number>& nodes    = element.nodes;
+            nonzero(const ::mesh::Element& element, const Coordinates& coo) {
+                const std::vector<::mesh::node::Number>& nodes  = element.nodes;
                 std::size_t count                               = nodes.size();
 
                 std::vector<cl_uint> ii(count * count);
