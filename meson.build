@@ -8,7 +8,7 @@ dependencies  = [
   , cc.find_library('metis')
   , dependency('mesh')
   ]
-sources       = []
+sources       = ['source/tomos-mesh.cpp']
 
 tomos = library(
   meson.project_name()

@@ -343,6 +343,9 @@ namespace decoder {
         }
         return msh;
     }
+
+    Mesh
+    decode(const std::filesystem::path& path);
 } // namespace mesh
 } // namespace tomos
 
