@@ -2,7 +2,6 @@
 #define TOMOS_METIS_HPP__
 
 #include <iostream>
-// #include <mesh/mesh.hpp>
 #include <metis.h>
 #include <tomos/tomos-mesh.hpp>
 
@@ -45,9 +44,9 @@ namespace metis {
             adjacency() const {
                 Adjacency values;
 
+                std::size_t keys    = static_cast<std::size_t>(ne_);
                 idx_t * prev        = xadj_;
                 idx_t * next        = xadj_ + 1;
-                std::size_t keys    = static_cast<std::size_t>(ne_);
 
                 for (std::size_t key = 0; key < keys; key++) {
                     values[key] = {};
@@ -100,54 +99,53 @@ namespace metis {
             idx_t * xadj_;      // pointer structure
             idx_t * adjncy_;    // pointer structure
     };
-    // template <typename Precision>
-    // class Nodal {
-    //     public:
-    //         Nodal(const mesh::Mesh<Precision>& mesh)
-    //             : ne_(static_cast<idx_t>(mesh.element.size()))
-    //             , nn_(static_cast<idx_t>(mesh.nodes.size()))
-    //         {
-    //             std::vector<idx_t> eptr = {0};
-    //             std::vector<idx_t> eind = {};
 
-    //             for (const auto& [key, _] : mesh.nodes) { keys_.push_back(key); }
-    //             for (const auto& [key, e] : mesh.element) {
-    //                 eptr.push_back(e.nodes.size() + eptr.back());
-    //                 for (const mesh::node::Number& n : e.nodes) { eind.push_back(n - 1); }  // C-style 0-based indexing
-    //             }
+    class Nodal {
+        public:
+            Nodal(const tomos::mesh::Mesh& mesh)
+                : ne_(static_cast<idx_t>(mesh.elements.size()))
+                , nn_(static_cast<idx_t>(mesh.nodes.size()))
+            {
+                std::vector<idx_t> eptr = {0};
+                std::vector<idx_t> eind = {};
 
-    //             idx_t numflag = 0;  // C-style 0-based indexing
-    //             METIS_MeshToNodal(&ne_, &nn_, eptr.data(), eind.data(), &numflag, &xadj_, &adjncy_);
-    //         }
+                for (const tomos::mesh::Element& e : mesh.elements) {
+                    eptr.push_back(e.nodes.size() + eptr.back());
+                    for (const mesh::node::Number& n : e.nodes) { eind.push_back(n); }
+                }
 
-    //         Adjacency
-    //         adjacency() const {
-    //             Adjacency values;
+                idx_t numflag = 0;  // C-style 0-based indexing
+                METIS_MeshToNodal(&ne_, &nn_, eptr.data(), eind.data(), &numflag, &xadj_, &adjncy_);
+            }
 
-    //             idx_t * prev = xadj_;
-    //             idx_t * next = xadj_ + 1;
-    //             for (const Index& key : keys_) {
-    //                 values[key] = {};
-    //                 for (idx_t j = *prev; j < *next; j++) { values[key].push_back(adjncy_[j] + 1); }
+            Adjacency
+            adjacency() const {
+                Adjacency values;
 
-    //                 prev++; next++;
-    //             }
-    //             return values;
-    //         }
+                std::size_t keys    = static_cast<std::size_t>(nn_);
+                idx_t * prev        = xadj_;
+                idx_t * next        = xadj_ + 1;
 
-    //         ~Nodal() {
-    //             METIS_Free(xadj_);
-    //             METIS_Free(adjncy_);
-    //         }
-    //     private:
-    //         idx_t ne_;  // number of elements
-    //         idx_t nn_;  // number of nodes
+                for (std::size_t key = 0; key < keys; key++) {
+                    values[key] = {};
+                    for (idx_t j = *prev; j < *next; j++) { values[key].push_back(adjncy_[j]); }
 
-    //         idx_t * xadj_;      // pointer structure
-    //         idx_t * adjncy_;    // pointer structure
+                    prev++; next++;
+                }
+                return values;
+            }
 
-    //         std::vector<Index> keys_;
-    // };
+            ~Nodal() {
+                METIS_Free(xadj_);
+                METIS_Free(adjncy_);
+            }
+        private:
+            idx_t ne_;  // number of elements
+            idx_t nn_;  // number of nodes
+
+            idx_t * xadj_;      // pointer structure
+            idx_t * adjncy_;    // pointer structure
+    };
 } // namespace metis
 } // namespace tomos
 

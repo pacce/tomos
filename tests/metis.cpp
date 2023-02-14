@@ -1,6 +1,5 @@
 #include <boost/spirit/include/qi.hpp>
 #include <gtest/gtest.h>
-// #include <mesh/mesh.hpp>
 #include <tomos/tomos.hpp>
 #include <tomos/tomos-mesh.hpp>
 
@@ -86,35 +85,35 @@ TEST(Dual, Edge) {
     }
 }
 
-// TEST(Nodal, Simple) {
-//     tomos::metis::Nodal nodal(MESH);
-//     tomos::metis::Adjacency actual      = nodal.adjacency();
-//     tomos::metis::Adjacency expected    = {
-//           {1, {2, 4, 5}}
-//         , {2, {1, 3, 5}}
-//         , {3, {2, 5, 6}}
-//         , {4, {1, 5, 7}}
-//         , {5, {1, 2, 3, 4, 6, 7, 8, 9}}
-//         , {6, {3, 5, 9}}
-//         , {7, {4, 5, 8}}
-//         , {8, {5, 7, 9}}
-//         , {9, {5, 6, 8}}
-//     };
-// 
-//     ASSERT_EQ(actual.size(), expected.size());
-// 
-//     for (auto& [k, xs] : expected) {
-//         tomos::metis::Neighbours& ys = actual[k];
-// 
-//         std::sort(xs.begin(), xs.end());
-//         std::sort(ys.begin(), ys.end());
-// 
-//         ASSERT_EQ(xs.size(), ys.size());
-//         for (std::size_t i = 0; i < xs.size(); i++) {
-//             EXPECT_EQ(xs[i], ys[i]);
-//         }
-//     }
-// }
+TEST(Nodal, Simple) {
+    tomos::metis::Nodal nodal(MESH);
+    tomos::metis::Adjacency actual      = nodal.adjacency();
+    tomos::metis::Adjacency expected    = {
+          {0, {1, 3, 4}}
+        , {1, {0, 2, 4}}
+        , {2, {1, 4, 5}}
+        , {3, {0, 4, 6}}
+        , {4, {0, 1, 2, 3, 5, 6, 7, 8}}
+        , {5, {2, 4, 8}}
+        , {6, {3, 4, 7}}
+        , {7, {4, 6, 8}}
+        , {8, {4, 5, 7}}
+    };
+
+    ASSERT_EQ(actual.size(), expected.size());
+
+    for (auto& [k, xs] : expected) {
+        tomos::metis::Neighbours& ys = actual[k];
+
+        std::sort(xs.begin(), xs.end());
+        std::sort(ys.begin(), ys.end());
+
+        ASSERT_EQ(xs.size(), ys.size());
+        for (std::size_t i = 0; i < xs.size(); i++) {
+            EXPECT_EQ(xs[i], ys[i]);
+        }
+    }
+}
 
 TEST(Partition, Edge2) {
     tomos::metis::Dual dual(MESH, tomos::metis::Common::EDGE);
