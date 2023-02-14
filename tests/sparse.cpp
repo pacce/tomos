@@ -1,30 +1,29 @@
 #include <boost/spirit/include/qi.hpp>
 #include <gtest/gtest.h>
-#include <mesh/mesh.hpp>
 #include <tomos/tomos.hpp>
+#include <tomos/tomos-mesh.hpp>
 
-const mesh::Mesh<float> MESH = {
-      {2.2, 0, 8}
-    , mesh::node::Map<float>{
-          {1, mesh::Node<float>(0.0f, 0.0f, 0.0f)}
-        , {2, mesh::Node<float>(1.0f, 0.0f, 0.0f)}
-        , {3, mesh::Node<float>(2.0f, 0.0f, 0.0f)}
-        , {4, mesh::Node<float>(0.0f, 1.0f, 0.0f)}
-        , {5, mesh::Node<float>(1.0f, 1.0f, 0.0f)}
-        , {6, mesh::Node<float>(2.0f, 1.0f, 0.0f)}
-        , {7, mesh::Node<float>(0.0f, 2.0f, 0.0f)}
-        , {8, mesh::Node<float>(1.0f, 2.0f, 0.0f)}
-        , {9, mesh::Node<float>(2.0f, 2.0f, 0.0f)}
+const tomos::mesh::Mesh MESH = {
+    tomos::mesh::Nodes{
+          {{0.0f, 0.0f, 0.0f}}
+        , {{1.0f, 0.0f, 0.0f}}
+        , {{2.0f, 0.0f, 0.0f}}
+        , {{0.0f, 1.0f, 0.0f}}
+        , {{1.0f, 1.0f, 0.0f}}
+        , {{2.0f, 1.0f, 0.0f}}
+        , {{0.0f, 2.0f, 0.0f}}
+        , {{1.0f, 2.0f, 0.0f}}
+        , {{2.0f, 2.0f, 0.0f}}
     }
-    , mesh::element::Map{
-          {1, {mesh::element::Type::TRIANGLE3, {1}, {1, 5, 4}}}
-        , {2, {mesh::element::Type::TRIANGLE3, {1}, {1, 2, 5}}}
-        , {3, {mesh::element::Type::TRIANGLE3, {1}, {2, 3, 5}}}
-        , {4, {mesh::element::Type::TRIANGLE3, {1}, {3, 6, 5}}}
-        , {5, {mesh::element::Type::TRIANGLE3, {1}, {4, 5, 7}}}
-        , {6, {mesh::element::Type::TRIANGLE3, {1}, {7, 5, 8}}}
-        , {7, {mesh::element::Type::TRIANGLE3, {1}, {5, 9, 8}}}
-        , {8, {mesh::element::Type::TRIANGLE3, {1}, {5, 6, 9}}}
+    , tomos::mesh::Elements{
+          {tomos::mesh::element::Type::TRIANGLE3, {0, 4, 3}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {0, 1, 4}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {1, 2, 4}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {2, 5, 4}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {3, 4, 6}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {6, 4, 7}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {4, 8, 7}}
+        , {tomos::mesh::element::Type::TRIANGLE3, {4, 5, 8}}
     }
 };
 

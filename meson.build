@@ -9,7 +9,7 @@ dependencies  = [
   , dependency('mesh')
   , dependency('tomos-mesh')
   ]
-sources       = []
+sources       = ['source/tomos-sparse.cpp']
 
 tomos = library(
   meson.project_name()
