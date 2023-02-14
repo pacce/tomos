@@ -64,38 +64,38 @@ TEST(GPU, Centroid) {
     }
 }
 
-// TEST(GPU, Normal) {
-//     tomos::mesh::Mesh mesh = {
-//          tomos::mesh::Nodes{
-//               {{0.0f, 0.0f, 0.0f}}
-//             , {{1.0f, 0.0f, 0.0f}}
-//             , {{1.0f, 1.0f, 0.0f}}
-//             , {{2.0f, 0.0f, 0.0f}}
-//             , {{2.0f, 2.0f, 0.0f}}
-//             , {{3.0f, 0.0f, 0.0f}}
-//             , {{3.0f, 3.0f, 0.0f}}
-//         }
-//         , tomos::mesh::Elements{
-//               {tomos::mesh::element::Type::TRIANGLE3, {0, 1, 2}}
-//             , {tomos::mesh::element::Type::TRIANGLE3, {0, 3, 4}}
-//             , {tomos::mesh::element::Type::TRIANGLE3, {0, 5, 6}}
-//         }
-//     };
-//     tomos::Engine engine(CL_DEVICE_TYPE_GPU);
-//     tomos::mesh::Nodes expected = {
-//           {{0.0f, 0.0f, 1.0f}}
-//         , {{0.0f, 0.0f, 4.0f}}
-//         , {{0.0f, 0.0f, 9.0f}}
-//     };
-//     tomos::mesh::Nodes actual   = engine.normal(mesh, "./shaders/tomos.kernel");
-// 
-//     ASSERT_EQ(actual.size(), expected.size());
-//     for (std::size_t i = 0; i < actual.size(); i++) {
-//         for (std::size_t j = 0; j < 3; j++) {
-//             EXPECT_FLOAT_EQ(actual[i].s[j], expected[i].s[j]); 
-//         }
-//     }
-// }
+TEST(GPU, Normal) {
+    tomos::mesh::Mesh mesh = {
+         tomos::mesh::Nodes{
+              {{0.0f, 0.0f, 0.0f}}
+            , {{1.0f, 0.0f, 0.0f}}
+            , {{1.0f, 1.0f, 0.0f}}
+            , {{2.0f, 0.0f, 0.0f}}
+            , {{2.0f, 2.0f, 0.0f}}
+            , {{3.0f, 0.0f, 0.0f}}
+            , {{3.0f, 3.0f, 0.0f}}
+        }
+        , tomos::mesh::Elements{
+              {tomos::mesh::element::Type::TRIANGLE3, {0, 1, 2}}
+            , {tomos::mesh::element::Type::TRIANGLE3, {0, 3, 4}}
+            , {tomos::mesh::element::Type::TRIANGLE3, {0, 5, 6}}
+        }
+    };
+    tomos::Engine engine(KERNEL, mesh);
+    tomos::mesh::Nodes expected = {
+          {{0.0f, 0.0f, 1.0f}}
+        , {{0.0f, 0.0f, 4.0f}}
+        , {{0.0f, 0.0f, 9.0f}}
+    };
+    tomos::mesh::Nodes actual   = engine.normal();
+
+    ASSERT_EQ(actual.size(), expected.size());
+    for (std::size_t i = 0; i < actual.size(); i++) {
+        for (std::size_t j = 0; j < 3; j++) {
+            EXPECT_FLOAT_EQ(actual[i].s[j], expected[i].s[j]);
+        }
+    }
+}
 
 
 // TEST(Stiffness, Oracle) {
@@ -124,13 +124,13 @@ TEST(GPU, Centroid) {
 //     };
 //     std::vector<float> actual   = engine.color(mesh, "./shaders/tomos.kernel");
 //     ASSERT_EQ(actual.size(), expected.size());
-// 
+//
 //     auto kv = tomos::sparse::csr(mesh);
 //     for (std::size_t i = 0; i < actual.size(); i++) {
 //         EXPECT_FLOAT_EQ(actual[i], expected[i]);
 //     }
 // }
-// 
+//
 // TEST(Stiffness, Square) {
 //     const mesh::Mesh<float> mesh = {
 //         {2.2, 0, 8}
@@ -164,7 +164,7 @@ TEST(GPU, Centroid) {
 //     };
 //     std::vector<float> actual   = engine.color(mesh, "./shaders/tomos.kernel");
 //     ASSERT_EQ(actual.size(), expected.size());
-// 
+//
 //     auto kv = tomos::sparse::csr(mesh);
 //     for (std::size_t i = 0; i < actual.size(); i++) {
 //         EXPECT_FLOAT_EQ(actual[i], expected[i]);

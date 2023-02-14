@@ -21,9 +21,9 @@ main(int argc, char** argv) {
 
         tomos::Engine engine("./shaders/tomos.kernel", mesh);
 
-        std::vector<float> xs = engine.area();
-        // engine.normal(mesh, "./shaders/tomos.kernel");
-        // engine.centroid(mesh, "./shaders/tomos.kernel");
+        std::vector<float> xs               = engine.area();
+        std::vector<tomos::mesh::Node> ns   = engine.normal();
+        std::vector<tomos::mesh::Node> cs   = engine.centroid();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         exit(EXIT_FAILURE);

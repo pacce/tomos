@@ -31,6 +31,7 @@ namespace tomos {
 
                 area_       = cl::Kernel(program_, "area");
                 centroid_   = cl::Kernel(program_, "centroid");
+                normal_     = cl::Kernel(program_, "normal");
             }
 
             std::vector<float>
@@ -61,28 +62,21 @@ namespace tomos {
                 queue.enqueueNDRangeKernel(centroid_, cl::NullRange, elements, cl::NullRange);
                 return this->read<cl_float3>(queue, values, elements);
             }
-// 
-//             std::vector<tomos::mesh::Node>
-//             normal(const tomos::mesh::Mesh& mesh, const std::filesystem::path& path) {
-//                 return {};
-//                 // cl::Program program = this->program(path);
-// 
-//                 // cl::Buffer nodes    = this->nodes(mesh);
-//                 // cl::Buffer elements = this->indices(mesh);
-//                 // cl::Buffer values   = this->buffer<cl_float3>(mesh.elements.size(), CL_MEM_READ_WRITE);
-// 
-//                 // cl::Kernel kernel(program, "normal");
-// 
-//                 // kernel.setArg(0, nodes);
-//                 // kernel.setArg(1, elements);
-//                 // kernel.setArg(2, values);
-// 
-//                 // cl::CommandQueue queue(context_, device_);
-//                 // queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.elements.size(), cl::NullRange);
-// 
-//                 // return this->read<cl_float3>(queue, values, mesh.elements.size());
-//             }
-// 
+
+             std::vector<tomos::mesh::Node>
+             normal() {
+                std::size_t elements    = mesh_.elements.size();
+                cl::Buffer values       = this->buffer<cl_float3>(elements, CL_MEM_READ_WRITE);
+
+                normal_.setArg(0, nodes_);
+                normal_.setArg(1, elements_);
+                normal_.setArg(2, values);
+
+                cl::CommandQueue queue(context_, device_);
+                queue.enqueueNDRangeKernel(normal_, cl::NullRange, elements, cl::NullRange);
+                return this->read<cl_float3>(queue, values, elements);
+             }
+
             // template <typename Precision>
             // std::vector<float>
             // color(const ::mesh::Mesh<Precision>& mesh, const std::filesystem::path& path) {
@@ -171,20 +165,6 @@ namespace tomos {
                 return ss.str();
             }
 
-            // cl::Program
-            // program(const std::string& source) {
-            //     cl::Program p(context_, cl::Program::Sources({source}));
-            //     p.build(device_);
-
-            //     return p;
-            // }
-
-            // cl::Program
-            // program(const std::filesystem::path& path) {
-            //     std::string source = Engine::kernel(path);
-            //     return this->program(source);
-            // }
-
             template <typename T>
             cl::Buffer
             buffer(std::vector<T>& vs, cl_mem_flags flag) {
@@ -225,22 +205,6 @@ namespace tomos {
                 return xs;
             }
 
-            // static std::vector<cl_uint>
-            // nonzero(const ::mesh::Element& element, const Coordinates& coo) {
-            //     const std::vector<::mesh::node::Number>& nodes  = element.nodes;
-            //     std::size_t count                               = nodes.size();
-
-            //     std::vector<cl_uint> ii(count * count);
-            //     for (std::size_t i = 0; i < count; i++) {
-            //     for (std::size_t j = 0; j < count; j++) {
-            //         std::size_t offset  = i * 3 + j;
-            //         ii[offset]          = coo.find({nodes[i], nodes[j]})->second;
-            //     }
-            //     }
-
-            //     return ii;
-            // }
-
             cl::Device  device_;
             cl::Context context_;
 
@@ -251,6 +215,7 @@ namespace tomos {
             cl::Program program_;
             cl::Kernel  area_;
             cl::Kernel  centroid_;
+            cl::Kernel  normal_;
     };
 } // namespace tomos
 
