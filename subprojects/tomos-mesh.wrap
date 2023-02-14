@@ -1,0 +1,6 @@
+[wrap-git]
+url         = git@github.com:pacce/tomos-mesh.git
+revision    = head
+
+[provide]
+tomos-mesh = mesh_dep
