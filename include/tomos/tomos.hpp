@@ -3,7 +3,7 @@
 
 // #include "tomos-color.hpp"
 #include "tomos-engine.hpp"
-// #include "tomos-metis.hpp"
+#include "tomos-metis.hpp"
 // #include "tomos-sparse.hpp"
 
 #endif // TOMOS_HPP__
