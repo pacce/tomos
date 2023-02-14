@@ -23,13 +23,14 @@ namespace tomos {
                 , context_(device_)
                 , mesh_(mesh)
             {
-                program_ = cl::Program(context_, Engine::kernel(path));
-                program_.build();
-
                 nodes_      = this->nodes(mesh);
                 elements_   = this->indices(mesh);
 
-                area_ = cl::Kernel(program_, "area");
+                program_ = cl::Program(context_, Engine::kernel(path));
+                program_.build();
+
+                area_       = cl::Kernel(program_, "area");
+                centroid_   = cl::Kernel(program_, "centroid");
             }
 
             std::vector<float>
@@ -47,26 +48,19 @@ namespace tomos {
                 return this->read<float>(queue, values, elements);
             }
 
-//             std::vector<mesh::Node>
-//             centroid(const tomos::mesh::Mesh& mesh, const std::filesystem::path& path) {
-//                 return {};
-//                 // cl::Program program = this->program(path);
-// 
-//                 // cl::Buffer nodes    = this->nodes(mesh);
-//                 // cl::Buffer elements = this->indices(mesh);
-//                 // cl::Buffer values   = this->buffer<cl_float3>(mesh.elements.size(), CL_MEM_READ_WRITE);
-// 
-//                 // cl::Kernel kernel(program, "centroid");
-// 
-//                 // kernel.setArg(0, nodes);
-//                 // kernel.setArg(1, elements);
-//                 // kernel.setArg(2, values);
-// 
-//                 // cl::CommandQueue queue(context_, device_);
-//                 // queue.enqueueNDRangeKernel(kernel, cl::NullRange, mesh.elements.size(), cl::NullRange);
-// 
-//                 // return this->read<cl_float3>(queue, values, mesh.elements.size());
-//             }
+            std::vector<tomos::mesh::Node>
+            centroid() {
+                std::size_t elements    = mesh_.elements.size();
+                cl::Buffer values       = this->buffer<cl_float3>(elements, CL_MEM_READ_WRITE);
+
+                centroid_.setArg(0, nodes_);
+                centroid_.setArg(1, elements_);
+                centroid_.setArg(2, values);
+
+                cl::CommandQueue queue(context_, device_);
+                queue.enqueueNDRangeKernel(centroid_, cl::NullRange, elements, cl::NullRange);
+                return this->read<cl_float3>(queue, values, elements);
+            }
 // 
 //             std::vector<tomos::mesh::Node>
 //             normal(const tomos::mesh::Mesh& mesh, const std::filesystem::path& path) {
@@ -256,7 +250,7 @@ namespace tomos {
 
             cl::Program program_;
             cl::Kernel  area_;
-
+            cl::Kernel  centroid_;
     };
 } // namespace tomos
 

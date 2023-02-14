@@ -30,40 +30,40 @@ TEST(GPU, Area) {
     for (std::size_t i = 0; i < actual.size(); i++) { EXPECT_EQ(actual[i], expected[i]); }
 }
 
-// TEST(GPU, Centroid) {
-//     tomos::mesh::Mesh mesh = {
-//          tomos::mesh::Nodes{
-//               {{0.0f, 0.0f, 0.0f}}
-//             , {{1.0f, 0.0f, 0.0f}}
-//             , {{1.0f, 1.0f, 0.0f}}
-//             , {{2.0f, 0.0f, 0.0f}}
-//             , {{2.0f, 2.0f, 0.0f}}
-//             , {{3.0f, 0.0f, 0.0f}}
-//             , {{3.0f, 3.0f, 0.0f}}
-//         }
-//         , tomos::mesh::Elements{
-//               {tomos::mesh::element::Type::TRIANGLE3, {0, 1, 2}}
-//             , {tomos::mesh::element::Type::TRIANGLE3, {0, 3, 4}}
-//             , {tomos::mesh::element::Type::TRIANGLE3, {0, 5, 6}}
-//         }
-//     };
-//     tomos::Engine engine(CL_DEVICE_TYPE_GPU);
-//     tomos::mesh::Nodes expected = {
-//           {{0.666666, 0.333333, 0.000000}}
-//         , {{1.333333, 0.666666, 0.000000}}
-//         , {{2.000000, 1.000000, 0.000000}}
-//     };
-//     tomos::mesh::Nodes actual   = engine.centroid(mesh, "./shaders/tomos.kernel");
-// 
-//     ASSERT_EQ(actual.size(), expected.size());
-//     for (std::size_t i = 0; i < actual.size(); i++) {
-//         for (std::size_t j = 0; j < 3; j++) {
-//             float value = actual[i].s[j] - expected[i].s[j];
-//             EXPECT_TRUE(std::abs(value) < 1e-3);
-//         }
-//     }
-// }
-// 
+TEST(GPU, Centroid) {
+    tomos::mesh::Mesh mesh = {
+         tomos::mesh::Nodes{
+              {{0.0f, 0.0f, 0.0f}}
+            , {{1.0f, 0.0f, 0.0f}}
+            , {{1.0f, 1.0f, 0.0f}}
+            , {{2.0f, 0.0f, 0.0f}}
+            , {{2.0f, 2.0f, 0.0f}}
+            , {{3.0f, 0.0f, 0.0f}}
+            , {{3.0f, 3.0f, 0.0f}}
+        }
+        , tomos::mesh::Elements{
+              {tomos::mesh::element::Type::TRIANGLE3, {0, 1, 2}}
+            , {tomos::mesh::element::Type::TRIANGLE3, {0, 3, 4}}
+            , {tomos::mesh::element::Type::TRIANGLE3, {0, 5, 6}}
+        }
+    };
+    tomos::Engine engine(KERNEL, mesh);
+    tomos::mesh::Nodes expected = {
+          {{0.666666, 0.333333, 0.000000}}
+        , {{1.333333, 0.666666, 0.000000}}
+        , {{2.000000, 1.000000, 0.000000}}
+    };
+    tomos::mesh::Nodes actual   = engine.centroid();
+
+    ASSERT_EQ(actual.size(), expected.size());
+    for (std::size_t i = 0; i < actual.size(); i++) {
+        for (std::size_t j = 0; j < 3; j++) {
+            float value = actual[i].s[j] - expected[i].s[j];
+            EXPECT_TRUE(std::abs(value) < 1e-3);
+        }
+    }
+}
+
 // TEST(GPU, Normal) {
 //     tomos::mesh::Mesh mesh = {
 //          tomos::mesh::Nodes{
