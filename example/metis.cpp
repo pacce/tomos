@@ -1,15 +1,25 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
-#include <mesh/mesh.hpp>
 #include <tomos/tomos.hpp>
+#include <tomos/tomos-mesh.hpp>
+
+tomos::mesh::Mesh
+decode(const std::filesystem::path& p) {
+    std::ifstream handle(p);
+    if (!handle.is_open()) { throw std::runtime_error("could not open mesh file"); }
+    handle.unsetf(std::ios::skipws);
+
+    return tomos::mesh::decode(boost::spirit::istream_iterator(handle), {});
+}
 
 int
 main(int argc, char** argv) {
     try {
         if (argc != 2) { throw std::invalid_argument("invalid number of arguments"); }
-        mesh::Mesh<float> mesh = mesh::decode<float>(std::filesystem::path{argv[1]});
-        tomos::metis::Dual<float> dual(mesh, tomos::metis::Common::EDGE);
+        tomos::mesh::Mesh mesh  = decode(std::filesystem::path{argv[1]});
+
+        tomos::metis::Dual dual(mesh, tomos::metis::Common::EDGE);
 
         for (const auto& [key, vs] : dual.adjacency()) {
             std::cout << key << " : ";
@@ -26,7 +36,7 @@ main(int argc, char** argv) {
         }
         std::cout << std::endl;
 
-        tomos::metis::Nodal<float> nodal(mesh);
+        tomos::metis::Nodal nodal(mesh);
         for (const auto& [key, vs] : nodal.adjacency()) {
             std::cout << key << " : ";
             for (const auto& v : vs) {

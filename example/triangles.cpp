@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <tomos/tomos.hpp>
+#include <tomos/tomos-mesh.hpp>
 
 tomos::mesh::Mesh
 decode(const std::filesystem::path& p) {
