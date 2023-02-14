@@ -4,20 +4,11 @@
 #include <tomos/tomos.hpp>
 #include <tomos/tomos-mesh.hpp>
 
-tomos::mesh::Mesh
-decode(const std::filesystem::path& p) {
-    std::ifstream handle(p);
-    if (!handle.is_open()) { throw std::runtime_error("could not open mesh file"); }
-    handle.unsetf(std::ios::skipws);
-
-    return tomos::mesh::decode(boost::spirit::istream_iterator(handle), {});
-}
-
 int
 main(int argc, char** argv) {
     try {
         if (argc != 2) { throw std::invalid_argument("invalid number of arguments"); }
-        tomos::mesh::Mesh mesh  = decode(std::filesystem::path{argv[1]});
+        tomos::mesh::Mesh mesh = tomos::mesh::decode(std::filesystem::path{argv[1]});
 
         tomos::metis::Dual dual(mesh, tomos::metis::Common::EDGE);
 
