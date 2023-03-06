@@ -1,14 +1,14 @@
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
-#include <mesh/mesh.hpp>
 #include <tomos/tomos.hpp>
+#include <tomos/tomos-mesh.hpp>
 
 int
 main(int argc, char** argv) {
     try {
         if (argc != 2) { throw std::invalid_argument("invalid number of arguments"); }
-        mesh::Mesh<float> mesh  = mesh::decode<float>(std::filesystem::path{argv[1]});
+        tomos::mesh::Mesh mesh = tomos::mesh::decode(std::filesystem::path{argv[1]});
         std::cout << tomos::sparse::nonzeros(mesh) << std::endl;
 
         auto [cols, rows] = tomos::sparse::csr(mesh);
