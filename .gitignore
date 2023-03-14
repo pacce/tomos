@@ -38,3 +38,6 @@ subprojects/geometry.wrap
 subprojects/gtest.wrap
 compile_commands.json
 .cache/
+
+# Meshes
+*.msh
