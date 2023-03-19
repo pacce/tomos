@@ -12,6 +12,26 @@
 #include "tomos-sparse.hpp"
 
 namespace tomos {
+    struct Memory {
+        std::size_t local;
+        std::size_t global;
+
+        friend std::ostream&
+        operator<<(std::ostream& os, const Memory& memory) {
+            const std::size_t KiB = 1024;
+            const std::size_t MiB = KiB * KiB;
+            const std::size_t GiB = KiB * MiB;
+
+            std::cout   << (memory.local / KiB)
+                        << " KiB"
+                        << ", "
+                        << (memory.global / GiB)
+                        << " GiB"
+                        ;
+            return os;
+        }
+    };
+
     class Engine {
         struct __attribute__ ((packed)) Triangle {
             cl_uint3 nodes;
@@ -23,6 +43,7 @@ namespace tomos {
             Engine(const std::filesystem::path& path, const tomos::mesh::Mesh& mesh)
                 : device_(Engine::device(CL_DEVICE_TYPE_GPU))
                 , context_(device_)
+                , memory_(Engine::memory(device_))
                 , mesh_(mesh)
             {
                 nodes_      = this->nodes(mesh);
@@ -144,6 +165,14 @@ namespace tomos {
                 return {};
             }
 
+            static Memory
+            memory(const cl::Device& device) {
+                return {
+                      device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>()
+                    , device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>()
+                };
+            }
+
             static std::string
             kernel(const std::filesystem::path& path) {
                 std::ifstream handle(path);
@@ -215,6 +244,7 @@ namespace tomos {
 
             cl::Device  device_;
             cl::Context context_;
+            Memory      memory_;
 
             tomos::mesh::Mesh   mesh_;
             cl::Buffer          nodes_;
