@@ -5,16 +5,18 @@
 #include <metis.h>
 #include <tomos/tomos-mesh.hpp>
 
+#include "tomos-partition.hpp"
+
 namespace tomos {
 namespace metis {
-    using Index         = std::size_t;
-    using Indices       = std::vector<Index>;
+    using Index         = partition::Index;
+    using Indices       = partition::Indices;
 
     using Neighbours    = std::vector<Index>;
     using Adjacency     = std::map<Index, Neighbours>;
 
-    using Partition     = std::size_t;
-    using Partitions    = std::map<Partition, Indices>;
+    using Partition     = partition::Partition;
+    using Partitions    = partition::Partitions;
 
     enum class Common : uint8_t { NODE = 1, EDGE = 2, FACE = 3 };
 

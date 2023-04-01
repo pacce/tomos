@@ -11,6 +11,7 @@ dependencies  = [
   ]
 sources       = [
     'source/tomos-color.cpp'
+  , 'source/tomos-partition.cpp'
   , 'source/tomos-sparse.cpp'
   ]
 
