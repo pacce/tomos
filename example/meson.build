@@ -4,3 +4,5 @@ executable(   'sparse',    'sparse.cpp', dependencies: tomos_dep)
 executable('triangles', 'triangles.cpp', dependencies: tomos_dep)
 
 executable('disk', 'disk.cpp', dependencies: [cc.find_library('gmsh'), tomos_dep])
+
+executable('partition', 'partition.cpp', dependencies: tomos_dep)

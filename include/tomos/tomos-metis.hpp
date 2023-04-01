@@ -63,36 +63,43 @@ namespace metis {
 
             Partitions
             partition(std::size_t count) {
-                idx_t ncon      = 1;
-                idx_t nparts    = static_cast<idx_t>(count);
-                idx_t edgecut   = 0;
-
-                std::vector<idx_t> part(ne_);
-                idx_t options[METIS_NOPTIONS];
-                METIS_SetDefaultOptions(options);
-
-                METIS_PartGraphKway(
-                          &ne_          // number of vertices
-                        , &ncon         // number of balancing constraints
-                        , xadj_
-                        , adjncy_
-                        , NULL          // vwgt
-                        , NULL          // vsize
-                        , NULL          // adjwgt
-                        , &nparts       // number of partitions
-                        , NULL          // tpwgts
-                        , NULL          // ubvec
-                        , options       // options
-                        , &edgecut      // objval
-                        , part.data()
-                        );
-
                 Partitions values;
 
-                std::size_t keys = static_cast<std::size_t>(ne_);
-                for (std::size_t key = 0; key < keys; key++) {
-                    std::size_t partition = static_cast<std::size_t>(part[key]);
-                    values[partition].push_back(key);
+                if (count == 0) {
+                    throw std::domain_error("partition count must be greater than 0");
+                } else if (count == 1) {
+                    std::size_t keys = static_cast<std::size_t>(ne_);
+                    for (std::size_t key = 0; key < keys; key++) { values[0].push_back(key); }
+                } else {
+                    idx_t ncon      = 1;
+                    idx_t nparts    = static_cast<idx_t>(count);
+                    idx_t edgecut   = 0;
+
+                    std::vector<idx_t> part(ne_);
+                    idx_t options[METIS_NOPTIONS];
+                    METIS_SetDefaultOptions(options);
+
+                    METIS_PartGraphKway(
+                              &ne_          // number of vertices
+                            , &ncon         // number of balancing constraints
+                            , xadj_
+                            , adjncy_
+                            , NULL          // vwgt
+                            , NULL          // vsize
+                            , NULL          // adjwgt
+                            , &nparts       // number of partitions
+                            , NULL          // tpwgts
+                            , NULL          // ubvec
+                            , options       // options
+                            , &edgecut      // objval
+                            , part.data()
+                            );
+
+                    std::size_t keys = static_cast<std::size_t>(ne_);
+                    for (std::size_t key = 0; key < keys; key++) {
+                        std::size_t partition = static_cast<std::size_t>(part[key]);
+                        values[partition].push_back(key);
+                    }
                 }
                 return values;
             }

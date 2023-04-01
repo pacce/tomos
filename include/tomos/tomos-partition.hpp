@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <tomos/tomos-mesh.hpp>
 #include <vector>
 
@@ -16,6 +17,9 @@ namespace partition {
 
     bool
     valid(const tomos::mesh::Mesh& mesh, const Partitions& ps, std::size_t limit);
+
+    std::size_t
+    optimal(const tomos::mesh::Mesh& mesh, std::size_t limit);
 } // namespace partition
 } // namespace tomos
 
