@@ -22,8 +22,13 @@ main(int argc, char** argv) {
         std::cout << std::endl;
 
         tomos::metis::Partitions ps = dual.partition(4);
-        for (const auto& [key, p] : ps) {
-            std::cout << key << " : " << p << std::endl;
+        for (const auto& [key, vs] : ps) {
+            std::cout << key << " : ";
+            for (std::size_t i = 0; i < vs.size(); i++) {
+                std::cout << vs[i];
+                if (i < (vs.size() - 1)) { std::cout << " "; }
+            }
+            std::cout << std::endl;
         }
         std::cout << std::endl;
 

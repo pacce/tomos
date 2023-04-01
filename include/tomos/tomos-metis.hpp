@@ -8,11 +8,13 @@
 namespace tomos {
 namespace metis {
     using Index         = std::size_t;
+    using Indices       = std::vector<Index>;
+
     using Neighbours    = std::vector<Index>;
     using Adjacency     = std::map<Index, Neighbours>;
 
     using Partition     = std::size_t;
-    using Partitions    = std::map<Index, Partition>;
+    using Partitions    = std::map<Partition, Indices>;
 
     enum class Common : uint8_t { NODE = 1, EDGE = 2, FACE = 3 };
 
@@ -85,10 +87,10 @@ namespace metis {
 
                 Partitions values;
 
-                std::size_t keys    = static_cast<std::size_t>(ne_);
+                std::size_t keys = static_cast<std::size_t>(ne_);
                 for (std::size_t key = 0; key < keys; key++) {
-                    const idx_t& partition  = part[key];
-                    values[key]             = static_cast<std::size_t>(partition);
+                    std::size_t partition = static_cast<std::size_t>(part[key]);
+                    values[partition].push_back(key);
                 }
                 return values;
             }

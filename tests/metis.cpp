@@ -119,21 +119,17 @@ TEST(Partition, Edge2) {
     tomos::metis::Dual dual(MESH, tomos::metis::Common::EDGE);
     tomos::metis::Partitions actual     = dual.partition(2);
     tomos::metis::Partitions expected   = {
-          {0, 0}
-        , {1, 1}
-        , {2, 1}
-        , {3, 1}
-        , {4, 0}
-        , {5, 0}
-        , {6, 0}
-        , {7, 1}
+          {0, {0, 4, 5, 6}}
+        , {1, {1, 2, 3, 7}}
     };
 
     ASSERT_EQ(actual.size(), expected.size());
 
-    for (auto& [k, x] : expected) {
-        tomos::metis::Partition& y = actual[k];
-        EXPECT_EQ(x, y);
+    for (auto& [k, xs] : expected) {
+        const tomos::metis::Indices& ys = actual[k];
+        ASSERT_EQ(xs.size(), ys.size());
+
+        for (std::size_t i = 0; i < xs.size(); i++) { EXPECT_EQ(xs[i], ys[i]); }
     }
 }
 
@@ -141,21 +137,19 @@ TEST(Partition, Edge4) {
     tomos::metis::Dual dual(MESH, tomos::metis::Common::EDGE);
     tomos::metis::Partitions actual     = dual.partition(4);
     tomos::metis::Partitions expected   = {
-          {0, 1}
-        , {1, 3}
-        , {2, 3}
-        , {3, 2}
-        , {4, 1}
-        , {5, 0}
-        , {6, 0}
-        , {7, 2}
+          {0, {5, 6}}
+        , {1, {0, 4}}
+        , {2, {3, 7}}
+        , {3, {1, 2}}
     };
 
     ASSERT_EQ(actual.size(), expected.size());
 
-    for (auto& [k, x] : expected) {
-        tomos::metis::Partition& y = actual[k];
-        EXPECT_EQ(x, y);
+    for (auto& [k, xs] : expected) {
+        const tomos::metis::Indices& ys = actual[k];
+        ASSERT_EQ(xs.size(), ys.size());
+
+        for (std::size_t i = 0; i < xs.size(); i++) { EXPECT_EQ(xs[i], ys[i]); }
     }
 }
 
